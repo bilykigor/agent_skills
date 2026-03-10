@@ -10,6 +10,7 @@ A collection of skills for [Claude Code](https://docs.anthropic.com/en/docs/clau
 | [summarize](skills/summarize/) | Summarize any URL, YouTube video, podcast, or file using the [summarize](https://github.com/steipete/summarize) CLI — supports slides extraction, multiple LLM backends, and many output formats |
 | [browser-tools](skills/browser-tools/) | Browser automation via Chrome DevTools Protocol using [browser-tools](https://github.com/badlogic/browser-tools) — navigate, eval JS, screenshot, pick elements, scrape content, search Google with your real Chrome profile |
 | [yt-transcript](skills/yt-transcript/) | Fetch transcripts, subtitles, and metadata from YouTube videos using yt-dlp — supports multiple languages, SRT/VTT/plain text output |
+| [second-brain](skills/second-brain/) | Manage an Obsidian second brain vault — quick notes, source entries, concept/pattern notes, search, and bidirectional linking |
 
 ---
 
