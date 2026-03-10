@@ -36,13 +36,6 @@ rm -rf /tmp/pi-skills
 - Node.js available
 - Scripts are in `~/agent-tools/browser-tools/` — invoke with full path using `$HOME`
 
-## How to Invoke
-
-```bash
-$HOME/agent-tools/browser-tools/browser-start.js
-$HOME/agent-tools/browser-tools/browser-nav.js https://example.com
-```
-
 ## Tools
 
 ### Start Chrome
@@ -68,10 +61,7 @@ $HOME/agent-tools/browser-tools/browser-eval.js 'document.title'
 $HOME/agent-tools/browser-tools/browser-eval.js 'document.querySelectorAll("a").length'
 ```
 
-Runs JS in the active tab's page context (async). Code is wrapped in `return (...)`, so:
-- Single expressions work: `'document.title'`
-- For multi-statement code, use an IIFE: `'(() => { const x = 1; return x + 2; })()'`
-- **Do NOT use bare `const`/`let`/`var` statements** — they will fail with SyntaxError
+Runs JS in the active tab's page context (async). Code is wrapped in `return (...)`, so use IIFEs for multi-statement code (see Efficiency Guide below).
 
 ### Screenshot
 
@@ -87,7 +77,7 @@ Captures viewport screenshot, returns temp file path. Read the file to see it.
 $HOME/agent-tools/browser-tools/browser-pick.js "Click the submit button"
 ```
 
-Launches an interactive overlay in the browser. The user clicks elements to select them (Cmd/Ctrl+Click for multi-select, Enter to finish). Returns element info (tag, id, class, text, html, parents). Use when the user wants to visually select something on the page.
+Launches an interactive overlay. User clicks elements to select (Cmd/Ctrl+Click for multi-select, Enter to finish). Returns element info. Use when the user wants to visually select something.
 
 ### Cookies
 
@@ -115,12 +105,78 @@ $HOME/agent-tools/browser-tools/browser-content.js https://example.com
 
 Navigates to URL and extracts readable content as markdown (uses Readability + Turndown).
 
+## Efficiency Guide
+
+### DOM Inspection Over Screenshots
+
+**Don't** take screenshots to see page state. **Do** parse the DOM directly:
+
+```javascript
+Array.from(document.querySelectorAll('button, input, [role="button"]')).map(e => ({
+  id: e.id, text: e.textContent.trim(), class: e.className
+}))
+```
+
+### Complex Scripts — Use IIFEs
+
+Code is wrapped in `return (...)`. For multi-statement code, always use an IIFE:
+
+```javascript
+(function() {
+  const data = document.querySelector('#target').textContent;
+  document.querySelector('button').click();
+  return JSON.stringify({ data });
+})()
+```
+
+### Batch Interactions
+
+**Don't** make separate calls for each click. **Do** batch them:
+
+```javascript
+(function() {
+  ["btn1", "btn2", "btn3"].forEach(id => document.getElementById(id).click());
+  return "Done";
+})()
+```
+
+### Shell Quoting Issues
+
+For complex JS with quotes, write to a temp file:
+
+```bash
+# Write JS to temp file, then eval it
+$HOME/agent-tools/browser-tools/browser-eval.js "$(cat /tmp/eval.js)"
+```
+
+### Investigate Before Interacting
+
+Always start by understanding the page structure:
+
+```javascript
+(function() {
+  return JSON.stringify({
+    title: document.title,
+    forms: document.forms.length,
+    buttons: document.querySelectorAll('button').length,
+    inputs: document.querySelectorAll('input').length,
+    mainContent: document.body.innerHTML.slice(0, 3000)
+  }, null, 2);
+})()
+```
+
+### Waiting for Updates
+
+If DOM updates after actions, add a small delay:
+
+```bash
+sleep 0.5 && $HOME/agent-tools/browser-tools/browser-eval.js '...'
+```
+
 ## Workflow Tips
 
-1. Always start Chrome first with `browser-start.js` — it runs in a separate instance, won't affect the user's main Chrome
+1. Always start Chrome first with `browser-start.js`
 2. Use `browser-eval.js` for most interactions — the model knows DOM APIs well
-3. For complex JS with shell quoting issues, write to a temp file and use `$HOME/agent-tools/browser-tools/browser-eval.js "$(cat /tmp/eval.js)"`
-4. Use `browser-pick.js` when the user wants to visually select elements
-5. Use `browser-screenshot.js` to verify page state visually
-6. Chain commands: search Google, review results, then extract content from specific URLs
-7. Results are composable — pipe output to files, chain with other tools
+3. Use `browser-pick.js` when the user wants to visually select elements
+4. Use `browser-screenshot.js` only when visual verification is needed
+5. Results are composable — pipe output to files, chain with other tools
