@@ -7,6 +7,8 @@ A collection of skills for [Claude Code](https://docs.anthropic.com/en/docs/clau
 | Skill | Description |
 |-------|-------------|
 | [rocketreach](skills/rocketreach/) | Search for professional contacts, look up validated emails, enrich company data via the RocketReach API |
+| [summarize](skills/summarize/) | Summarize any URL, YouTube video, podcast, or file using the [summarize](https://github.com/steipete/summarize) CLI — supports slides extraction, multiple LLM backends, and many output formats |
+| [browser-tools](skills/browser-tools/) | Browser automation via Chrome DevTools Protocol using [browser-tools](https://github.com/badlogic/browser-tools) — navigate, eval JS, screenshot, pick elements, scrape content, search Google with your real Chrome profile |
 
 ---
 
@@ -15,7 +17,8 @@ A collection of skills for [Claude Code](https://docs.anthropic.com/en/docs/clau
 ### Prerequisites
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed (`npm install -g @anthropic-ai/claude-code`)
-- A RocketReach API key (get one at [rocketreach.co](https://rocketreach.co/signup))
+- **rocketreach**: A RocketReach API key (get one at [rocketreach.co](https://rocketreach.co/signup))
+- **summarize**: The `summarize` CLI (`brew install steipete/tap/summarize` or `npm i -g @steipete/summarize`) + at least one LLM API key (OPENAI_API_KEY, ANTHROPIC_API_KEY, etc.)
 
 ### Installation
 
@@ -29,7 +32,11 @@ mkdir -p ~/.claude/skills
 
 # Clone the repo and copy the skill you want
 git clone https://github.com/bilykigor/agent_skills.git /tmp/agent_skills
+cp -r /tmp/agent_skills/skills/<skill-name> ~/.claude/skills/<skill-name>
+
+# Examples:
 cp -r /tmp/agent_skills/skills/rocketreach ~/.claude/skills/rocketreach
+cp -r /tmp/agent_skills/skills/summarize ~/.claude/skills/summarize
 ```
 
 The skill is now available in **all your Claude Code sessions**.
@@ -55,21 +62,22 @@ cd agent_skills
 claude  # start Claude Code here
 ```
 
-### Set your API key
+### Set your API keys
 
-Export your RocketReach API key before starting Claude Code:
+Export the required API keys before starting Claude Code:
 
 ```bash
+# RocketReach
 export ROCKETREACH_API_KEY="your_key_here"
+
+# Summarize (at least one LLM key)
+export OPENAI_API_KEY="your_key_here"
+# or: ANTHROPIC_API_KEY, GEMINI_API_KEY, XAI_API_KEY
+
 claude
 ```
 
-Or add it to your shell profile (`~/.bashrc`, `~/.zshrc`) for persistence:
-
-```bash
-echo 'export ROCKETREACH_API_KEY="your_key_here"' >> ~/.zshrc
-source ~/.zshrc
-```
+Or add them to your shell profile (`~/.bashrc`, `~/.zshrc`) for persistence.
 
 ---
 
@@ -97,15 +105,25 @@ Just ask Claude naturally — the skill auto-activates when relevant:
 "Check my RocketReach account credits"
 ```
 
-### Example workflow
+### Example workflows
 
+**RocketReach:**
 ```
 You:    Find me 6-7 contacts (HR, CEO, Business Development) at Acme Corp and Globex Inc
 Claude: [runs search for each company, then lookups for each person]
 Claude: Here are your results — saved to contacts.csv, contacts.md, and contacts.txt
+```
 
-You:    /rocketreach enrich acme.com
-Claude: [returns company metadata: industry, size, revenue, location, etc.]
+**Summarize:**
+```
+You:    Summarize https://www.youtube.com/watch?v=VIDEO_ID
+Claude: [fetches transcript, runs LLM summary, returns key points]
+
+You:    /summarize https://example.com/long-article
+Claude: [extracts content, generates concise summary]
+
+You:    Summarize this video with slides: https://youtu.be/VIDEO_ID
+Claude: [extracts slides + transcript, returns summary with slide screenshots]
 ```
 
 ### Output formats
@@ -133,15 +151,19 @@ Node.js is guaranteed to be available since Claude Code requires it.
 ### Skill structure
 
 ```
-skills/rocketreach/
-├── SKILL.md                  # Skill definition, curl examples, instructions
-├── references/
-│   └── api.md                # Full RocketReach API reference
-└── scripts/
-    ├── check_account.js      # Account info and credits
-    ├── search_people.js      # Search people by company + titles
-    ├── lookup_people.js      # Batch lookup with rate limiting → CSV/MD/TXT/JSON
-    └── enrich_company.js     # Company enrichment by name or domain
+skills/
+├── rocketreach/
+│   ├── SKILL.md                  # Skill definition, curl examples, instructions
+│   ├── references/
+│   │   └── api.md                # Full RocketReach API reference
+│   └── scripts/
+│       ├── check_account.js      # Account info and credits
+│       ├── search_people.js      # Search people by company + titles
+│       ├── lookup_people.js      # Batch lookup with rate limiting → CSV/MD/TXT/JSON
+│       └── enrich_company.js     # Company enrichment by name or domain
+└── summarize/
+    ├── SKILL.md                  # Skill definition, CLI flags, workflow
+    └── test.sh                   # Test suite (8 tests)
 ```
 
 ---
