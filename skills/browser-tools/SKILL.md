@@ -9,10 +9,8 @@ allowed-tools: Bash(browser-*.js *), Bash(cd ~/agent-tools/browser-tools && npm 
 ## Setup
 
 ```bash
-git clone https://github.com/badlogic/pi-skills /tmp/pi-skills
-cp -r /tmp/pi-skills/browser-tools ~/agent-tools/browser-tools
-cd ~/agent-tools/browser-tools && npm install
-rm -rf /tmp/pi-skills
+git clone https://github.com/badlogic/pi-skills ~/agent-tools/pi-skills
+cd ~/agent-tools/pi-skills/browser-tools && npm install
 ```
 
 ## Usage
@@ -20,5 +18,5 @@ rm -rf /tmp/pi-skills
 Read the full skill documentation:
 
 ```bash
-cat ~/agent-tools/browser-tools/SKILL.md
+cat ~/agent-tools/pi-skills/browser-tools/SKILL.md
 ```
