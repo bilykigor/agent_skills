@@ -6,34 +6,37 @@ allowed-tools: Bash(browser-*.js *), Bash(cd ~/agent-tools/browser-tools && npm 
 
 # Browser Tools
 
-Chrome DevTools Protocol tools for browser automation, scraping, and web interaction. Uses your real Chrome browser (not headless), so logged-in sessions and cookies work.
+Chrome DevTools Protocol tools for browser automation, scraping, and web interaction. Launches a separate Chrome instance with its own profile at `~/.cache/browser-tools`, so it won't interfere with the user's main Chrome.
 
-Source: https://github.com/badlogic/browser-tools
+Source: https://github.com/badlogic/pi-skills/tree/main/browser-tools
 
 ## Setup
 
 If not already installed:
 
 ```bash
-git clone https://github.com/badlogic/browser-tools ~/agent-tools/browser-tools
+git clone https://github.com/badlogic/pi-skills /tmp/pi-skills
+cp -r /tmp/pi-skills/browser-tools ~/agent-tools/browser-tools
 cd ~/agent-tools/browser-tools && npm install
+rm -rf /tmp/pi-skills
 ```
 
 To update:
 
 ```bash
-cd ~/agent-tools/browser-tools && git pull && npm install
+git clone https://github.com/badlogic/pi-skills /tmp/pi-skills
+cp -r /tmp/pi-skills/browser-tools/* ~/agent-tools/browser-tools/
+cd ~/agent-tools/browser-tools && npm install
+rm -rf /tmp/pi-skills
 ```
 
 ## Prerequisites
 
 - Google Chrome installed
 - Node.js available
-- Scripts are in `~/agent-tools/browser-tools/` and must be invoked with full path using `$HOME`
+- Scripts are in `~/agent-tools/browser-tools/` — invoke with full path using `$HOME`
 
 ## How to Invoke
-
-All scripts are in `~/agent-tools/browser-tools/`. Invoke via Bash with `$HOME`:
 
 ```bash
 $HOME/agent-tools/browser-tools/browser-start.js
@@ -45,11 +48,11 @@ $HOME/agent-tools/browser-tools/browser-nav.js https://example.com
 ### Start Chrome
 
 ```bash
-$HOME/agent-tools/browser-tools/browser-start.js              # Fresh profile
-$HOME/agent-tools/browser-tools/browser-start.js --profile    # With user's profile (cookies, logins)
+$HOME/agent-tools/browser-tools/browser-start.js              # Fresh isolated profile
+$HOME/agent-tools/browser-tools/browser-start.js --profile    # Rsync user's Chrome profile (cookies, logins)
 ```
 
-Launches Chrome with remote debugging on `:9222`. **WARNING**: `--profile` kills any running Chrome first and rsyncs the user's profile. Ask the user before using `--profile`.
+Launches a **separate** Chrome instance with remote debugging on `:9222`, using an isolated data dir at `~/.cache/browser-tools`. If Chrome is already running on :9222, it reuses it. The `--profile` flag rsyncs the user's main Chrome profile into the isolated dir (ask user before using).
 
 ### Navigate
 
@@ -65,7 +68,10 @@ $HOME/agent-tools/browser-tools/browser-eval.js 'document.title'
 $HOME/agent-tools/browser-tools/browser-eval.js 'document.querySelectorAll("a").length'
 ```
 
-Runs JS in the active tab's page context (async). Use for DOM inspection, data extraction, clicking elements, filling forms.
+Runs JS in the active tab's page context (async). Code is wrapped in `return (...)`, so:
+- Single expressions work: `'document.title'`
+- For multi-statement code, use an IIFE: `'(() => { const x = 1; return x + 2; })()'`
+- **Do NOT use bare `const`/`let`/`var` statements** — they will fail with SyntaxError
 
 ### Screenshot
 
@@ -81,7 +87,7 @@ Captures viewport screenshot, returns temp file path. Read the file to see it.
 $HOME/agent-tools/browser-tools/browser-pick.js "Click the submit button"
 ```
 
-Launches an interactive overlay in the browser. The user clicks elements to select them (Cmd/Ctrl+Click for multi-select, Enter to finish). Returns CSS selectors and element info. Use when the user wants to point at something on the page.
+Launches an interactive overlay in the browser. The user clicks elements to select them (Cmd/Ctrl+Click for multi-select, Enter to finish). Returns element info (tag, id, class, text, html, parents). Use when the user wants to visually select something on the page.
 
 ### Cookies
 
@@ -111,9 +117,10 @@ Navigates to URL and extracts readable content as markdown (uses Readability + T
 
 ## Workflow Tips
 
-1. Always start Chrome first with `browser-start.js` (use `--profile` if the user needs to be logged in)
+1. Always start Chrome first with `browser-start.js` — it runs in a separate instance, won't affect the user's main Chrome
 2. Use `browser-eval.js` for most interactions — the model knows DOM APIs well
-3. Use `browser-pick.js` when the user wants to visually select elements
-4. Use `browser-screenshot.js` to verify page state visually
-5. Chain commands: search Google, review results, then extract content from specific URLs
-6. Results are composable — pipe output to files, chain with other tools
+3. For complex JS with shell quoting issues, write to a temp file and use `$HOME/agent-tools/browser-tools/browser-eval.js "$(cat /tmp/eval.js)"`
+4. Use `browser-pick.js` when the user wants to visually select elements
+5. Use `browser-screenshot.js` to verify page state visually
+6. Chain commands: search Google, review results, then extract content from specific URLs
+7. Results are composable — pipe output to files, chain with other tools
